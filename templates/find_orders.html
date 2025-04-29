@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order Search</title>
+    <!-- Bootstrap 5 inclusion -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="{% url 'product_list' %}">KrytuShmot</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <form class="d-flex ms-auto" action="{% url 'view_cart' %}" method="get">
+                    <button class="btn btn-outline-dark" type="submit">
+                        <i class="bi-cart-fill me-1"></i>
+                        Cart
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <!-- Header-->
+    <header class="bg-dark py-5" style="background: linear-gradient(70deg, #141010, #edeaec);">
+        <div class="container px-4 px-lg-5 my-5">
+            <div class="text-center text-white">
+                <h1 class="display-4 fw-bolder">Your orders</h1>
+                <p class="lead fw-normal text-white-50 mb-0"></p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form action="{% url 'find_orders' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">Your First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name"
+                                    placeholder="Enter your first name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name"
+                                    placeholder="Enter your last name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="contact" class="form-label">Phone or Email</label>
+                                <input type="text" class="form-control" id="contact" name="contact"
+                                    placeholder="Enter your phone number or email" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-dark btn-primary">Search Orders</button>
+                            </div>
+                        </form>
+                        {% if orders %}
+                        <h4 class="mt-4">Found Orders:</h4>
+                        <ul class="list-group">
+                            {% for order in orders %}
+                            <li class="list-group-item">
+                                Order №{{ order.id }} - {{ order.get_status_display }}<br>
+                                Address: {{ order.address }}, {{ order.city }}<br>
+                                Total: {{ order.total }} UAH<br>
+                                Status: {{ order.get_status_display }}<br>
+                                {{ order.created_at }}<br>
+                                {% for item in order.items.all %}
+                                - {{ item.quantity }} x {{ item.product.name }} ({{ item.price }} UAH) - Total:
+                                {{ item.total_price }} UAH<br>
+                                {% endfor %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% elif orders is None %}
+                        <p class="mt-4 text-danger">{{ message }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+
+    <!-- Bootstrap JS inclusion -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
