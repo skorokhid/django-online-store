@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
@@ -13,6 +15,14 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -21,4 +31,17 @@ jobs:
       - name: Build and test
         run: |
           docker-compose up -d
-          docker-compose exec web python manage.py test
+          docker-compose exec -T web python manage.py test
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: Lint code
+        run: |
+          docker-compose exec -T web pip install flake8
+          docker-compose exec -T web flake8 .
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down
+          docker volume prune -f

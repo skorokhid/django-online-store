@@ -41,7 +41,7 @@ class Product(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='U')
     size = models.CharField(max_length=3, choices=SIZE_CHOICES)
     color = models.CharField(max_length=50)
-    image = models.ImageField(upload_to='products/')
+    image = models.ImageField(upload_to='products/', null=True, blank=True)
     stock = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -8,7 +6,7 @@ services:
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
-      - db_volume:/app/db  # Для збереження SQLite-файлу
+      - db_volume:/app/db
     ports:
       - "8000:8000"
     environment:
@@ -16,4 +14,4 @@ services:
       - DEBUG=1
 
 volumes:
-  db_volume:  # Том для збереження db.sqlite3
+  db_volume:
