@@ -1,1 +1,1 @@
-web: gunicorn shop.wsgi:application --log-level debug --log-file -
+web: python manage.py runserver 0.0.0.0:8000
