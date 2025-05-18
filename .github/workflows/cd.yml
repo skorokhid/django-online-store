@@ -9,14 +9,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and test Docker image
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          docker build -t django-online-store:test .
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -35,11 +32,18 @@ jobs:
             -d '{}')
           DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
           echo "Deploy ID: $DEPLOY_ID"
-          # Зменшена перевірка статусу
-          STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status' || echo "error")
-          echo "Deploy status: $STATUS"
-          if [ "$STATUS" = "error" ]; then
-            echo "Deploy failed"
+          # Перевірка статусу з затримкою
+          STATUS="in_progress"
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+          while [ "$STATUS" != "live" ] && [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            sleep 30
+            STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status' || echo "error")
+            echo "Attempt $ATTEMPT: Deploy status: $STATUS"
+            ((ATTEMPT++))
+          done
+          if [ "$STATUS" = "error" ] || [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+            echo "Deploy failed or timed out with status: $STATUS"
             exit 1
           fi
