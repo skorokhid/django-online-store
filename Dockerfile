@@ -1,25 +1,22 @@
 FROM python:3.11-slim-bookworm
 
-# Оновлення та встановлення залежностей
+# Встановлення бібліотек
 RUN apt-get update && apt-get install -y \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Встановлення робочої директорії
+# Робоча директорія
 WORKDIR /app
 
-# Оновлення pip
-RUN pip install --upgrade pip
-
-# Копіювання та установка залежностей
+# Копіювання файлів
 COPY requirements.txt .
-RUN pip install --no-cache-dir \
-    --prefer-binary \
-    --timeout=300 \
-    -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копіювання коду
 COPY . .
 
-# Команда для запуску (буде перевизначена в Render Docker Command)
-CMD ["gunicorn", "shop.wsgi:application"]  # Замініть "shop" на назву вашого проєкту
+# Створення /tmp (на всяк випадок)
+RUN mkdir -p /tmp
+
+# Виконання міграцій при запуску + запуск gunicorn
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn shop.wsgi:application --log-level debug --log-file -"]
