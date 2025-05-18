@@ -39,15 +39,18 @@ jobs:
           DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
           echo "Deploy ID: $DEPLOY_ID"
           # Чекаємо завершення деплою
-          STATUS="build_in_progress"
-          while [ "$STATUS" = "build_in_progress" ]; do
-            sleep 30
+          STATUS="in_progress"
+          MAX_ATTEMPTS=10
+          ATTEMPT=1
+          while [ "$STATUS" != "live" ] && [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            sleep 60
             STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
-              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status')
-            echo "Deploy status: $STATUS"
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status' || echo "error")
+            echo "Attempt $ATTEMPT: Deploy status: $STATUS"
+            ((ATTEMPT++))
           done
-          if [ "$STATUS" != "live" ]; then
-            echo "Deploy failed with status: $STATUS"
+          if [ "$STATUS" = "error" ] || [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+            echo "Deploy failed or timed out with status: $STATUS"
             exit 1
           fi
       - name: Run migrations
