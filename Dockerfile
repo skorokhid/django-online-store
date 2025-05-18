@@ -19,8 +19,9 @@ COPY . .
 RUN mkdir -p /tmp
 
 CMD ["sh", "-c", "\
+  set -a && . /etc/secrets/env && set +a && \
   python manage.py migrate --noinput && \
   python manage.py collectstatic --noinput && \
-  python manage.py createsuperuser --noinput || true && \
+  python manage.py createsuperuser --noinput && \
   gunicorn shop.wsgi:application --log-level debug --log-file -\
 "]
