@@ -32,10 +32,24 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
-          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
+          DEPLOY_RESPONSE=$(curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{}'
+            -d '{}')
+          DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
+          echo "Deploy ID: $DEPLOY_ID"
+          # Чекаємо завершення деплою
+          STATUS="build_in_progress"
+          while [ "$STATUS" = "build_in_progress" ]; do
+            sleep 30
+            STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status')
+            echo "Deploy status: $STATUS"
+          done
+          if [ "$STATUS" != "live" ]; then
+            echo "Deploy failed with status: $STATUS"
+            exit 1
+          fi
       - name: Run migrations
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
