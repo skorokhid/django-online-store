@@ -18,5 +18,4 @@ COPY . .
 # Створення /tmp (на всяк випадок)
 RUN mkdir -p /tmp
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn shop.wsgi:application --log-level debug --log-file -"]
-
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && ls -R staticfiles && gunicorn shop.wsgi:application --log-level debug --log-file -"]
