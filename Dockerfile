@@ -18,5 +18,5 @@ COPY . .
 # Створення /tmp (на всяк випадок)
 RUN mkdir -p /tmp
 
-# Виконання міграцій при запуску + запуск gunicorn
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn shop.wsgi:application --log-level debug --log-file -"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn shop.wsgi:application --log-level debug --log-file -"]
+
