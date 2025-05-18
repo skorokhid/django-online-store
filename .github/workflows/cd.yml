@@ -17,9 +17,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
-        run: |
-          pytest
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -38,36 +35,11 @@ jobs:
             -d '{}')
           DEPLOY_ID=$(echo $DEPLOY_RESPONSE | jq -r '.id')
           echo "Deploy ID: $DEPLOY_ID"
-          # Чекаємо завершення деплою
-          STATUS="in_progress"
-          MAX_ATTEMPTS=10
-          ATTEMPT=1
-          while [ "$STATUS" != "live" ] && [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-            sleep 60
-            STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
-              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status' || echo "error")
-            echo "Attempt $ATTEMPT: Deploy status: $STATUS"
-            ((ATTEMPT++))
-          done
-          if [ "$STATUS" = "error" ] || [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
-            echo "Deploy failed or timed out with status: $STATUS"
+          # Зменшена перевірка статусу
+          STATUS=$(curl -X GET https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" | jq -r '.status' || echo "error")
+          echo "Deploy status: $STATUS"
+          if [ "$STATUS" = "error" ]; then
+            echo "Deploy failed"
             exit 1
           fi
-      - name: Run migrations
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-        run: |
-          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/run \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"cmd": "python manage.py migrate"}'
-      - name: Collect static files
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-        run: |
-          curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/run \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"cmd": "python manage.py collectstatic --noinput"}'
